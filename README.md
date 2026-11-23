@@ -4,7 +4,7 @@ Panneau flottant macOS ultra-léger en AppKit natif (zéro dépendance externe) 
 
 Toujours au premier plan, sur tous les espaces, sans icône dans le Dock, compatible **Apple Silicon & Intel** (macOS 14+).
 
-## Installation rapide (pour vos amis)
+## Installation rapide
 
 ### Via Homebrew (1 commande, retire automatiquement la quarantaine macOS)
 
