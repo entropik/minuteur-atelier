@@ -14,7 +14,7 @@ brew install --cask --no-quarantine entropik/minuteur-atelier/minuteur-atelier
 
 ### Ou par téléchargement direct (`.zip`)
 
-1. Télécharger **`Minuteur-Atelier-v1.0.1-macOS-universal.zip`** depuis la [page des Releases](https://github.com/entropik/minuteur-atelier/releases/latest).
+1. Télécharger **`Minuteur-Atelier-v1.0.2-macOS-universal.zip`** depuis la [page des Releases](https://github.com/entropik/minuteur-atelier/releases/latest).
 2. Double-cliquer sur **`Installer Minuteur Atelier.command`** (inclus dans le dossier décompressé) : il copie l'application dans `/Applications`, retire l'alerte Gatekeeper (`xattr -cr`) et lance le minuteur.
 
 ## Compiler depuis les sources

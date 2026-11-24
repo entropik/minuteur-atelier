@@ -668,7 +668,7 @@ final class ModeSwitcher: NSView {
 
     override var intrinsicContentSize: NSSize {
         var width: CGFloat = 10
-        for title in titles { width += textSize(title).width + 18 }
+        for title in titles { width += textSize(title).width + 16 }
         width += CGFloat(titles.count - 1) * 2
         return NSSize(width: ceil(width), height: 22)
     }
@@ -684,12 +684,17 @@ final class ModeSwitcher: NSView {
 
     private func computeRects() {
         guard bounds.width > 0 else { return }
-        let pad: CGFloat = 5
+        let pad: CGFloat = 4
         let available = bounds.width - 2 * pad
-        var widths = titles.map { textSize($0).width + 18 }
+        var widths = titles.map { textSize($0).width + 16 }
         let sum = widths.reduce(0, +)
         if sum > available, sum > 0 {
             widths = widths.map { $0 * available / sum }
+        } else if sum < available {
+            // Aucun débordement : l'espace restant est réparti pour que la piste
+            // s'arrête exactement sur le bord du dernier segment.
+            let extra = (available - sum) / CGFloat(widths.count)
+            widths = widths.map { $0 + extra }
         }
         var x = pad
         segmentRects = widths.map { w in
@@ -852,6 +857,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTe
 
         // Ligne du haut : mode et option millisecondes
         modeSwitcher = ModeSwitcher()
+        modeSwitcher.setContentHuggingPriority(.required, for: .horizontal)
+        modeSwitcher.setContentCompressionResistancePriority(.required, for: .horizontal)
         modeSwitcher.selectedIndex = model.mode.rawValue
         modeSwitcher.onSelect = { [weak self] index in
             guard let self else { return }
