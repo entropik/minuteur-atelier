@@ -648,6 +648,96 @@ final class PomodoroDotsView: NSView {
     }
 }
 
+// MARK: - Sélecteur de mode
+
+/// Sélecteur maison : toujours blanc, jamais teinté par la couleur d'accent macOS
+/// quand la fenêtre devient active (contrairement à NSSegmentedControl).
+final class ModeSwitcher: NSView {
+    var onSelect: ((Int) -> Void)?
+
+    var selectedIndex: Int = 0 {
+        didSet {
+            guard selectedIndex != oldValue else { return }
+            needsDisplay = true
+        }
+    }
+
+    private let titles = ["Minuteur", "Chrono", "Tomate"]
+    private let font = NSFont.systemFont(ofSize: 12, weight: .semibold)
+    private var segmentRects: [NSRect] = []
+
+    override var intrinsicContentSize: NSSize {
+        var width: CGFloat = 10
+        for title in titles { width += textSize(title).width + 18 }
+        width += CGFloat(titles.count - 1) * 2
+        return NSSize(width: ceil(width), height: 22)
+    }
+
+    override func layout() {
+        super.layout()
+        computeRects()
+    }
+
+    private func textSize(_ text: String) -> NSSize {
+        (text as NSString).size(withAttributes: [.font: font])
+    }
+
+    private func computeRects() {
+        guard bounds.width > 0 else { return }
+        let pad: CGFloat = 5
+        let available = bounds.width - 2 * pad
+        var widths = titles.map { textSize($0).width + 18 }
+        let sum = widths.reduce(0, +)
+        if sum > available, sum > 0 {
+            widths = widths.map { $0 * available / sum }
+        }
+        var x = pad
+        segmentRects = widths.map { w in
+            let r = NSRect(x: x, y: 1, width: w, height: bounds.height - 2)
+            x += w
+            return r
+        }
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        if segmentRects.isEmpty { computeRects() }
+
+        let bg = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 7, yRadius: 7)
+        NSColor.white.withAlphaComponent(0.12).setFill()
+        bg.fill()
+
+        for (i, rect) in segmentRects.enumerated() {
+            if i == selectedIndex {
+                let sel = NSBezierPath(roundedRect: rect, xRadius: 5, yRadius: 5)
+                NSColor.white.withAlphaComponent(0.26).setFill()
+                sel.fill()
+            }
+            let title = titles[i]
+            let size = textSize(title)
+            let color = NSColor.white.withAlphaComponent(i == selectedIndex ? 0.97 : 0.62)
+            (title as NSString).draw(
+                at: NSPoint(x: rect.midX - size.width / 2, y: rect.midY - size.height / 2),
+                withAttributes: [.font: font, .foregroundColor: color]
+            )
+        }
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        let point = convert(event.locationInWindow, from: nil)
+        for (i, rect) in segmentRects.enumerated() where rect.contains(point) {
+            guard i != selectedIndex else { return }
+            selectedIndex = i
+            needsDisplay = true
+            onSelect?(i)
+            return
+        }
+    }
+
+    override func resetCursorRects() {
+        addCursorRect(bounds, cursor: .pointingHand)
+    }
+}
+
 // MARK: - Panneau flottant et champ de saisie
 
 /// Panneau sans bordure qui accepte quand même le focus clavier pour le champ de séance.
@@ -687,7 +777,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTe
     private var millisecondsMenuItem: NSMenuItem!
     private var dailyHeadlineMenuItem: NSMenuItem!
     private var playButton: NSButton!
-    private var modeControl: NSSegmentedControl!
+    private var modeSwitcher: ModeSwitcher!
     private var statusItem: NSStatusItem!
     private var ticker: Timer?
     private var showMilliseconds = false
@@ -707,7 +797,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTe
         buildStatusItem()
         buildPanel()
         taskField.stringValue = savedTask
-        modeControl.selectedSegment = model.mode.rawValue
+        modeSwitcher.selectedIndex = model.mode.rawValue
         startTicker()
         refresh()
     }
@@ -761,15 +851,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTe
         container.addSubview(tintView)
 
         // Ligne du haut : mode et option millisecondes
-        modeControl = NSSegmentedControl(
-            labels: ["Minuteur", "Chrono", "Tomate"],
-            trackingMode: .selectOne,
-            target: self,
-            action: #selector(modeChanged(_:))
-        )
-        modeControl.selectedSegment = 0
-        modeControl.controlSize = .small
-        modeControl.segmentStyle = .texturedRounded
+        modeSwitcher = ModeSwitcher()
+        modeSwitcher.selectedIndex = model.mode.rawValue
+        modeSwitcher.onSelect = { [weak self] index in
+            guard let self else { return }
+            self.panel.makeFirstResponder(nil)
+            switch index {
+            case 1: self.model.setMode(.stopwatch)
+            case 2: self.model.setMode(.pomodoro)
+            default: self.model.setMode(.countdown)
+            }
+            self.refresh()
+        }
 
         millisecondsButton = NSButton(
             title: "ms", target: self, action: #selector(toggleMilliseconds(_:))
@@ -781,7 +874,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTe
 
         let topSpacer = NSView()
         topSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        let topRow = NSStackView(views: [modeControl, topSpacer, millisecondsButton])
+        let topRow = NSStackView(views: [modeSwitcher, topSpacer, millisecondsButton])
         topRow.orientation = .horizontal
         topRow.spacing = 8
         topRow.alignment = .centerY
@@ -1191,6 +1284,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTe
         commitTaskField()
     }
 
+    /// Curseur d'insertion et sélection en blanc : jamais la couleur d'accent macOS.
+    func controlTextDidBeginEditing(_ obj: Notification) {
+        guard let editor = taskField.currentEditor() as? NSTextView else { return }
+        editor.insertionPointColor = .white
+        editor.selectedTextAttributes = [
+            .backgroundColor: NSColor.white.withAlphaComponent(0.22),
+            .foregroundColor: NSColor.white,
+        ]
+    }
+
     func controlTextDidEndEditing(_ obj: Notification) {
         guard let field = obj.object as? NSTextField, field === taskField else { return }
         commitTaskField()
@@ -1253,24 +1356,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTe
 
     @objc private func presetPressed(_ sender: NSButton) {
         model.setPreset(minutes: Double(sender.tag))
-        modeControl.selectedSegment = 0
+        modeSwitcher.selectedIndex = 0
         model.start()
         refresh()
     }
 
-    @objc private func modeChanged(_ sender: NSSegmentedControl) {
-        panel.makeFirstResponder(nil)
-        switch sender.selectedSegment {
-        case 1: model.setMode(.stopwatch)
-        case 2: model.setMode(.pomodoro)
-        default: model.setMode(.countdown)
-        }
-        refresh()
-    }
 
     @objc private func menuPomodoro(_ sender: Any?) {
         model.setMode(.pomodoro)
-        modeControl.selectedSegment = 2
+        modeSwitcher.selectedIndex = 2
         model.start()
         panel.orderFrontRegardless()
         refresh()
@@ -1278,7 +1372,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTe
 
     @objc private func menuPreset(_ sender: NSMenuItem) {
         model.setPreset(minutes: Double(sender.tag))
-        modeControl.selectedSegment = 0
+        modeSwitcher.selectedIndex = 0
         model.start()
         panel.orderFrontRegardless()
         refresh()
@@ -1286,7 +1380,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTe
 
     @objc private func menuChrono(_ sender: Any?) {
         model.setMode(.stopwatch)
-        modeControl.selectedSegment = 1
+        modeSwitcher.selectedIndex = 1
         model.start()
         panel.orderFrontRegardless()
         refresh()

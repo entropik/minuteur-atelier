@@ -1,6 +1,6 @@
 cask "minuteur-atelier" do
-  version "1.0.0"
-  sha256 "0fae61dd330d7d9cecbd54633aa6adb4cd102716a5954ee7bf97d182b01ee30f"
+  version "1.0.1"
+  sha256 "a4800506befdf3bae2cc0ff7a954771e936798d453614263848ebb843b01926f"
 
   url "https://github.com/entropik/minuteur-atelier/releases/download/v#{version}/Minuteur-Atelier-v#{version}-macOS-universal.zip"
   name "Minuteur Atelier"
@@ -9,7 +9,7 @@ cask "minuteur-atelier" do
 
   depends_on macos: ">= :sonoma"
 
-  app "Minuteur-Atelier-Dist/Minuteur Atelier.app"
+  app "Minuteur-Atelier/Minuteur Atelier.app"
 
   postflight do
     system_command "/usr/bin/xattr",
