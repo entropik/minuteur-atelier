@@ -1,6 +1,6 @@
 cask "minuteur-atelier" do
-  version "1.0.2"
-  sha256 "d264e1bc2f79ddd51b22f4a650221f26158960efa934eaa86f6f818ef9e67932"
+  version "1.0.3"
+  sha256 "fc881d1b0710dc70956cc1844b1d6292a439f682006037ae9c0c706cdbbef36a"
 
   url "https://github.com/entropik/minuteur-atelier/releases/download/v#{version}/Minuteur-Atelier-v#{version}-macOS-universal.zip"
   name "Minuteur Atelier"

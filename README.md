@@ -14,7 +14,7 @@ brew install --cask --no-quarantine entropik/minuteur-atelier/minuteur-atelier
 
 ### Ou par téléchargement direct (`.zip`)
 
-1. Télécharger **`Minuteur-Atelier-v1.0.2-macOS-universal.zip`** depuis la [page des Releases](https://github.com/entropik/minuteur-atelier/releases/latest).
+1. Télécharger **`Minuteur-Atelier-v1.0.3-macOS-universal.zip`** depuis la [page des Releases](https://github.com/entropik/minuteur-atelier/releases/latest).
 2. Double-cliquer sur **`Installer Minuteur Atelier.command`** (inclus dans le dossier décompressé) : il copie l'application dans `/Applications`, retire l'alerte Gatekeeper (`xattr -cr`) et lance le minuteur.
 
 ## Compiler depuis les sources
@@ -42,6 +42,7 @@ Compile un binaire universel (`arm64` + `x86_64`), génère le bundle signé ad 
   - **Indivisible** : pas de pause possible pendant une Tomate (seul `↺` permet d'annuler la Tomate en cours et de repartir à `25:00`).
   - Champ éditable **`Séance…`** en bas à droite pour nommer la tâche en cours et la retrouver dans l'export CSV.
 - **Barre de menus `⏱`** :
+  - Bouton **`œil barré`** en haut à droite du panneau pour le **masquer** d'un clic (le temps reste visible dans la barre de menus, un clic sur `⏱` le rouvre).
   - Affiche le temps en direct (`⏱ 18:42`) quand le panneau est masqué ou qu'une Tomate tourne en arrière-plan.
   - Affiche le bilan du jour en tête de menu (`Aujourd'hui : X tomates · YhZZ`) et un bouton **« Copier le résumé du jour »** (`⌘C`).
   - Carillon macOS (`Glass`) + notification native à chaque fin de compte à rebours ou transition Pomodoro.

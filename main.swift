@@ -879,11 +879,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTe
         millisecondsButton.controlSize = .small
         millisecondsButton.toolTip = "Afficher les millisecondes"
 
+        // Masquer le panneau : le temps reste visible dans la barre de menus (⏱).
+        let hideButton = symbolButton("eye.slash", action: #selector(hidePanel(_:)))
+        hideButton.contentTintColor = .white.withAlphaComponent(0.62)
+        hideButton.toolTip = "Masquer le panneau (le temps reste dans la barre de menus)"
+        hideButton.setContentHuggingPriority(.required, for: .horizontal)
+
         let topSpacer = NSView()
         topSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        let topRow = NSStackView(views: [modeSwitcher, topSpacer, millisecondsButton])
+        let topRow = NSStackView(views: [modeSwitcher, topSpacer, millisecondsButton, hideButton])
         topRow.orientation = .horizontal
-        topRow.spacing = 8
+        topRow.spacing = 6
         topRow.alignment = .centerY
 
         // Grand affichage : H:MM:SS (+ .mmm à la demande), groupe centré.
@@ -1399,6 +1405,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSTe
         } else {
             panel.orderFrontRegardless()
         }
+        lastStatusTitle = ""
+        updateStatusBarTitle()
+    }
+
+    @objc private func hidePanel(_ sender: Any?) {
+        panel.orderOut(nil)
+        lastStatusTitle = ""
+        updateStatusBarTitle()
     }
 
     @objc private func revealLogs(_ sender: Any?) {
